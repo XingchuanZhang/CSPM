@@ -1,50 +1,91 @@
-# Adversarial Perturbations for Defeating Cryptographic Algorithm Identification
-Recent advances in machine learning have enabled highly effective ciphertext-based cryptographic algorithm identification, posing a potential threat to encrypted communication. Inspired by adversarial example techniques, we present CSPM (Class-Specific Perturbation Mask Generation), a novel adversarial-defense framework that enhances ciphertext unidentifiability through misleading machine-learning-based cipher classifiers. CPSM constructs lightweight, reversible bit-level perturbations that alter statistical ciphertext features without affecting legitimate decryption.
-The method leverages class prototypes to capture representative bit-distribution patterns for each cryptographic algorithm and integrates two complementary mechanisms—mimicry-based perturbing, which steers ciphertexts toward similar cipher classes, and distortion-based perturbing, which disrupts distinctive statistical traits—through a ranking-based greedy search.
-Extensive experiments on seven widely used cryptographic algorithms and fifteen NIST statistical feature configurations demonstrate that CSPM consistently reduces algorithm-identification accuracy by over 25\%. These results confirm that perturbation position selection, rather than magnitude, dominates attack efficacy.
-CSPM provides a practical defense mechanism, offering a new perspective for safeguarding encrypted communications against statistical and machine-learning-based traffic analysis.
+# CSPM: Class-Specific Perturbation Mask Generation
 
-## Data
-The data we get from the OANC (https://anc.org/).
+> **Adversarial Perturbations for Defeating Cryptographic Algorithm Identification**
 
-## Code
+![Python](https://img.shields.io/badge/Python-3.8%2B-blue)
+![License](https://img.shields.io/badge/License-MIT-green)
+![Status](https://img.shields.io/badge/Status-Research-orange)
 
-### ChooseMimic.py
+## 📖 Introduction
 
-This script analyzes the distribution of '0's and '1's in ciphertext sequences to identify statistical similarities between different encryption algorithms to help find the mimic class of every cryptographic algorithm. 
+Recent advances in machine learning have enabled highly effective ciphertext-based cryptographic algorithm identification, posing a potential threat to encrypted communication. 
 
+**CSPM (Class-Specific Perturbation Mask Generation)** is a novel adversarial-defense framework designed to safeguard encrypted communications. It constructs lightweight, reversible bit-level perturbations that alter statistical ciphertext features to mislead machine-learning-based classifiers without affecting legitimate decryption.
 
-###   Serial Test.py, Binary Matrix Rank Test.py, Non-overlapping Template Matching Test.py
-The three scripts are the examples of the NIST-15 features extraction.  
+**Key Features:**
+* **Mimicry-based Perturbing:** Steers ciphertexts toward statistically similar cipher classes.
+* **Distortion-based Perturbing:** Disrupts distinctive statistical traits.
+* **High Efficacy:** Reduces algorithm-identification accuracy by over **25%** across widely used cryptographic algorithms.
 
-**Serial Test**: examines whether the frequency of all m-bit subsequences in the sequence is consistent with that of a true random sequence. Uneven frequency distributions may indicate non-randomness.
+---
 
-**Binary Matrix Rank Test**: constructs matrices from the sequence and evaluates the linear dependence of fixed-length subsequences. Strong linear dependence suggests non-randomness.
+## 📂 Data
 
-**Non-overlapping Template Matching Test**: counts the occurrences of specific non-overlapping patterns in the sequence and compares them to the expected distribution in a true random sequence. Large deviations suggest non-randomness.
+The dataset used in this research is sourced from the **OANC** (Open American National Corpus).
+* **Source:** [https://anc.org/](https://anc.org/)
 
-### HybridSearch.py
-This script implements the core **Bit-wise Hybrid Greedy Search** algorithm to generate the adversarial perturbation mask. It aims to mislead the cryptographic identification model by systematically identifying and flipping the most critical bits in the ciphertext.
+---
 
-1.  **Importance Ranking (Heuristic Initialization)**
-    Instead of a brute-force search, the algorithm first calculates an "**Importance Score**" for each bit position based on a hybrid metric:
-    * **Inter-class Difference:** How different this bit is from the target "similar" algorithm.
-    * **Intra-class Stability:** How consistent this bit is within the original algorithm's samples.
-    * **Result:** A prioritized list of bit positions to attack.
+## 🛠️ Installation
 
-2.  **Iterative Greedy Optimization**
-    The algorithm iterates through the ranked positions and performs a "**Flip-and-Test**" operation:
-    * **Flip:** Invert the bit at the current position ($0 \to 1$ or $1 \to 0$).
-    * **Query:** Send the perturbed samples to the black-box DNN model.
-    * **Test:** Check if the model's confidence in the true label decreases.
+1.  Clone the repository:
+    ```bash
+    git clone [https://github.com/your-username/your-repo.git](https://github.com/your-username/your-repo.git)
+    cd your-repo
+    ```
 
-3.  **Decision & Update**
-    * **Keep:** If the confidence drops, the bit flip is permanently added to the adversarial mask.
-    * **Revert:** If the confidence rises or stays the same, the flip is discarded.
+2.  Install the required dependencies:
+    ```bash
+    pip install -r requirements.txt
+    ```
 
-4.  **Final Output**
-    The script outputs a binary **Adversarial Mask** ($m$) of length $L$. Legitimate receivers can use $m$ to restore the original ciphertext ($c = c' \oplus m$) before decryption.
+---
 
+## 🚀 Modules & Scripts
 
-The current implementation uses the NIST Non-overlapping Template Matching Test (m=6) as the core feature extractor to drive the identification model. However, the FeatureExtractor class (in adversarial_attack.py) is designed as a modular interface.Researchers can easily extend this tool by implementing other statistical tests, such as NIST-15 features.
+### 1. Preprocessing
+| Script | Description |
+| :--- | :--- |
+| `ChooseMimic.py` | Analyzes the distribution of '0's and '1's in ciphertext sequences. It identifies statistical similarities between encryption algorithms to determine the optimal **"mimic class"** (target label) for the attack. |
+
+### 2. NIST Feature Extraction
+These scripts implement key components of the NIST-15 statistical test suite to extract features from ciphertext.
+
+* **`Serial Test.py`**
+    Examines whether the frequency of all $m$-bit subsequences is consistent with a true random sequence. Uneven distributions indicate non-randomness.
+* **`Binary Matrix Rank Test.py`**
+    Constructs matrices from the sequence to evaluate linear dependence. Strong linear dependence suggests non-randomness.
+* **`Non-overlapping Template Matching Test.py`**
+    Counts occurrences of specific non-overlapping patterns. Large deviations from expected counts suggest non-randomness.
+
+> **💡 Extensibility:** The current implementation uses the *Non-overlapping Template Matching Test (m=6)* as the core feature extractor. However, the `FeatureExtractor` class is designed as a modular interface. Researchers can easily extend this tool by implementing other NIST-15 tests.
+
+---
+
+## 🧠 Core Algorithm: HybridSearch.py
+
+This script implements the **Bit-wise Hybrid Greedy Search** algorithm. It aims to mislead the identification model by systematically identifying and flipping the most critical bits in the ciphertext.
+
+### Workflow
+
+#### Step 1: Importance Ranking (Heuristic Initialization)
+Instead of a brute-force search, we calculate an **"Importance Score"** for each bit position based on a hybrid metric:
+* **Inter-class Difference:** How different this bit is from the target "similar" algorithm.
+* **Intra-class Stability:** How consistent this bit is within the original algorithm's samples.
+* **Result:** A prioritized list of bit positions to attack.
+
+#### Step 2: Iterative Greedy Optimization
+The algorithm iterates through the ranked positions and performs a **"Flip-and-Test"** operation:
+* **Flip:** Invert the bit at the current position ($0 \to 1$ or $1 \to 0$).
+* **Query:** Send the perturbed samples to the black-box DNN model.
+* **Test:** Check if the model's confidence in the true label decreases.
+
+#### Step 3: Decision & Update
+* **Keep:** If the confidence drops, the bit flip is permanently added to the adversarial mask.
+* **Revert:** If the confidence rises or stays the same, the flip is discarded.
+
+#### Step 4: Final Output
+The script generates a binary **Adversarial Mask** ($m$) of length $L$.
+* **Sender:** Computes perturbed ciphertext $c' = c \oplus m$.
+* **Receiver:** Restores original ciphertext $c = c' \oplus m$ before decryption.
 
